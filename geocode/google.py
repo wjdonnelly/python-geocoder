@@ -1,3 +1,8 @@
+import hashlib
+import hmac
+import base64
+import urlparse
+
 from decimal import Decimal
 
 try:
@@ -151,12 +156,47 @@ class GoogleGeocoder(object):
 
 class GoogleGeocoderClient(object):
     
-    def __init__(self, sensor):
+    def __init__(self, sensor, client=None, key=None):
         """
         Sensor parameter is boolean, for details see:
         http://code.google.com/apis/maps/documentation/geocoding/
+
+        `client` and `key` parameters are for use by Google Maps API for
+        Business users. See
+        https://developers.google.com/maps/documentation/business/webservices
+        for more information.
+
         """
         self.sensor = sensor
+        self.client = client
+        self.key = key
+
+    def _sign_request(self, req):
+        """For Google Maps API for Business requests.
+
+        Largely borrowed from
+        http://gmaps-samples.googlecode.com/svn/trunk/urlsigning/urlsigner.py
+
+        """
+        if not self.client or not self.key:
+            return req
+
+        url = urlparse.urlparse(req)
+
+        # We only need to sign the path+query part of the string
+        urlToSign = url.path + "?" + url.query
+
+        # Decode the private key into its binary format
+        decodedKey = base64.urlsafe_b64decode(self.key)
+
+        # Create a signature using the private key and the URL-encoded
+        # string using HMAC SHA1. This signature will be binary.
+        signature = hmac.new(decodedKey, urlToSign, hashlib.sha1)
+
+        # Encode the binary signature into base64 for use within a URL
+        encodedSignature = base64.urlsafe_b64encode(signature.digest())
+        originalUrl = url.scheme + "://" + url.netloc + url.path + "?" + url.query
+        return originalUrl + "&signature=" + encodedSignature
     
     def geocode_raw(self, output="json", address=None, latlng=None, bounds=None, region=None, language=None):
         """ Returns raw geocoded address information in json or xml format.
@@ -193,10 +233,12 @@ class GoogleGeocoderClient(object):
             params.append("region=" + quote_plus(region))
         if language:
             params.append("language=" + quote_plus(language))
+        if self.client:
+            params.append("client=" + self.client)
         
         url = GOOGLE_GEOCODING_API_URL + output + "?" + "&".join(params)
         
-        handler = urlopen(url)
+        handler = urlopen(self._sign_request(url))
         return handler.read()
     
     def geocode(self, address=None, latlng=None, bounds=None, region=None, language=None):
