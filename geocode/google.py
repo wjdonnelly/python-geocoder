@@ -171,6 +171,60 @@ class GoogleGeocoderClient(object):
         self.client = client
         self.key = key
 
+    def _build_request(self, output, address, latlng, bounds, region, language):
+        """Helper function for building the request URL.
+
+        >>> client = GoogleGeocoderClient(False)
+        >>> args = ('json', 'New York', None, None, None, None)
+        >>> url = urlparse.urlparse(client._build_request(*args))
+        >>> sigs = filter(lambda x: x[:10] == 'signature=', url.query.split('&'))
+        >>> print len(sigs)
+        0
+
+        >>> client = GoogleGeocoderClient(
+        ...     False, client='clientID', key='vNIXE0xscrmjlyV-12Nj_BvUPaw='
+        ... )
+        >>> args = ('json', 'New York', None, None, None, None)
+        >>> url = urlparse.urlparse(client._build_request(*args))
+        >>> sigs = filter(lambda x: x[:10] == 'signature=', url.query.split('&'))
+        >>> print len(sigs)
+        1
+        >>> print sigs[0][10:]
+        KrU1TzVQM7Ur0i8i7K3huiw3MsA=
+
+        """
+        if (not (address or latlng)) or (address and latlng):
+            raise AssertionError("Either address or latlang is required (but not both)")
+        assert output in ("json", "xml")
+
+        tuple2str = lambda x: "%s,%s" % (x[0], x[1])
+
+        bool2str = lambda x:str(bool(x)).lower()
+
+        params = []
+
+        if address:
+            if isinstance(address, unicode):
+                params.append("address=" + quote_plus(address.encode("utf8")))
+            else:
+                params.append("address=" + quote_plus(address))
+
+        params.append("sensor=" + bool2str(self.sensor))
+
+        if latlng:
+            params.append("latlng=" + tuple2str(latlng))
+        if bounds:
+            params.append("bounds=" + "|".join(map(lambda x:tuple2str(x), bounds)))
+        if region:
+            params.append("region=" + quote_plus(region))
+        if language:
+            params.append("language=" + quote_plus(language))
+        if self.client:
+            params.append("client=" + self.client)
+
+        req = GOOGLE_GEOCODING_API_URL + output + "?" + "&".join(params)
+        return self._sign_request(req)
+
     def _sign_request(self, req):
         """For Google Maps API for Business requests.
 
@@ -210,35 +264,8 @@ class GoogleGeocoderClient(object):
         
         Either address or latlng (but not both) parameters are required. the rest is optional.
         """
-        if (not (address or latlng)) or (address and latlng):
-            raise AssertionError("Either address or latlang is required (but not both)")
-        assert output in ("json", "xml")
-        
-        tuple2str = lambda x: "%s,%s" % (x[0], x[1])
-        
-        bool2str = lambda x:str(bool(x)).lower()
-        
-        params = ["sensor=" + bool2str(self.sensor)]
-        
-        if address:
-            if isinstance(address, unicode):
-                params.append("address=" + quote_plus(address.encode("utf8")))
-            else:
-                params.append("address=" + quote_plus(address))
-        if latlng:
-            params.append("latlng=" + tuple2str(latlng))
-        if bounds:
-            params.append("bounds=" + "|".join(map(lambda x:tuple2str(x), bounds)))
-        if region:
-            params.append("region=" + quote_plus(region))
-        if language:
-            params.append("language=" + quote_plus(language))
-        if self.client:
-            params.append("client=" + self.client)
-        
-        url = GOOGLE_GEOCODING_API_URL + output + "?" + "&".join(params)
-        
-        handler = urlopen(self._sign_request(url))
+        url = self._build_request(output, address, latlng, bounds, region, language)
+        handler = urlopen(url)
         return handler.read()
     
     def geocode(self, address=None, latlng=None, bounds=None, region=None, language=None):
