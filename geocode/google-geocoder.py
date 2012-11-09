@@ -3,7 +3,7 @@
 Command line interface fro Google geocoding service.
 """
 
-from geocode.google import GoogleGeocoder, GoogleGeocoderClient
+from google import GoogleGeocoder, GoogleGeocoderClient
 
 def main():
     """Command line interface that outputs geocoding results in json format."""
