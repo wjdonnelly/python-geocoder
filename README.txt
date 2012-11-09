@@ -40,7 +40,12 @@ As python library::
     The Massasauga Provincial Park, The Archipelago, ON, Canada
     The Massasauga Provincial Park, RR 2, Parry Sound, ON P0G, Canada
     Massasauga Prairie Nature Preserve, Berwick, IL 61417, USA
-    
+
+
+If you are using Google Maps API for business pass your key and client id when
+initializing GoogleGeocoderClient::
+
+    >>> geocoder = GoogleGeocoderClient(False, my_client_id, my_key)
     
 
 geocode/google-geocoder.py is a command line tool. A sample usage::
