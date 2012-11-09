@@ -172,27 +172,8 @@ class GoogleGeocoderClient(object):
         self.key = key
 
     def _build_request(self, output, address, latlng, bounds, region, language):
-        """Helper function for building the request URL.
-
-        >>> client = GoogleGeocoderClient(False)
-        >>> args = ('json', 'New York', None, None, None, None)
-        >>> url = urlparse.urlparse(client._build_request(*args))
-        >>> sigs = filter(lambda x: x[:10] == 'signature=', url.query.split('&'))
-        >>> print len(sigs)
-        0
-
-        >>> client = GoogleGeocoderClient(
-        ...     False, client='clientID', key='vNIXE0xscrmjlyV-12Nj_BvUPaw='
-        ... )
-        >>> args = ('json', 'New York', None, None, None, None)
-        >>> url = urlparse.urlparse(client._build_request(*args))
-        >>> sigs = filter(lambda x: x[:10] == 'signature=', url.query.split('&'))
-        >>> print len(sigs)
-        1
-        >>> print sigs[0][10:]
-        KrU1TzVQM7Ur0i8i7K3huiw3MsA=
-
-        """
+        """ Helper function for building the request URL. """
+        
         if (not (address or latlng)) or (address and latlng):
             raise AssertionError("Either address or latlang is required (but not both)")
         assert output in ("json", "xml")
@@ -223,18 +204,11 @@ class GoogleGeocoderClient(object):
             params.append("client=" + self.client)
 
         req = GOOGLE_GEOCODING_API_URL + output + "?" + "&".join(params)
-        return self._sign_request(req)
-
-    def _sign_request(self, req):
-        """For Google Maps API for Business requests.
-
-        Largely borrowed from
-        http://gmaps-samples.googlecode.com/svn/trunk/urlsigning/urlsigner.py
-
-        """
+        
         if not self.client or not self.key:
-            return req
-
+            return req # unsigned request
+        
+        # using API for business, need to sign the request
         url = urlparse.urlparse(req)
 
         # We only need to sign the path+query part of the string
