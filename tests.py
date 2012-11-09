@@ -22,9 +22,6 @@ class GoogleGeocoderValidAddressTests(unittest.TestCase):
     def test_success(self):
         self.assertTrue(self.geocoder.is_success())
         
-    def test_number_of_results(self):
-        self.assertTrue(len(self.geocoder.results) == 1)
-    
     def test_formatted_address(self):
         self.assertTrue("Toronto" in self.geocoder.get_formatted_address())
     
