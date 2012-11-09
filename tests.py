@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import unittest
 from decimal import Decimal
 from geocode.google import GoogleGeocoder, GoogleGeocoderClient
