@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name="python-geocoder",
-    version="0.1",
+    version="0.2",
     description="A simple geocoding library using Google Maps APIs",
     long_description=open("README.txt").read(),
     author="Sergiy Kuzmenko",
